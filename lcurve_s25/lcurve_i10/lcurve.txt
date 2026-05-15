@@ -1,0 +1,2 @@
+res_s  res_g  resall  lm  mrough
+156.951 99.131 185.636 38.581 12.543
