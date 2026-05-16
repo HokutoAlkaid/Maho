@@ -1,11 +1,19 @@
 set -x
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT_DIR"
+
 start=`date`
 DATE1=`date +%s%N|cut -c1-13`
 timefile="runtime.txt"
 logdir="logs"
+terminal_log="$logdir/terminal_output.log"
 rm -f $timefile
 mkdir -p $logdir
+rm -f "$terminal_log"
+
+# Save the full terminal stream while keeping live output visible.
+exec > >(tee -a "$terminal_log") 2>&1
 
 #---
 #   Firstly, We create the initial model
@@ -96,7 +104,7 @@ done
 #plot results
 cd results/gmt_vel_joint
   bash bash.sh > ../../$logdir/gmt_vel_joint.log 2>&1
-cd ..
+cd ../
 
 end=`date`
 DATE2=`date +%s%N|cut -c1-13`
@@ -108,3 +116,6 @@ echo $end   >>$timefile
 echo "Running time:: $(($((${DATE2}-${DATE1}))/60000)) min" >>$timefile
 echo "check1 log:: $logdir/check1_build.log" >>$timefile
 echo "plot log:: $logdir/gmt_vel_joint.log" >>$timefile
+
+echo "Collecting key results..."
+bash "$ROOT_DIR/collect_key_results.sh" | tee -a $timefile

@@ -3,7 +3,13 @@ import numpy as np
 from scipy.sparse import bmat, diags, eye
 from scipy.sparse.linalg import lsmr
 
+# ===== Joint inversion configuration =====
+# Keep the commonly tuned parameters near the top of the file so each
+# checkerboard experiment only needs one quick edit here.
 KM_PER_DEG = 111.32
+ALPHA_S = 1.0
+ALPHA_G = 0.4
+BETA_T = 0.01
 
 
 def ordered_unique(values):
@@ -81,6 +87,26 @@ def solve_least_squares(A, B):
     return result[0]
 
 
+def compute_block_scale(*arrays):
+    # Normalize each cross-gradient block so it can numerically compete
+    # with the identity blocks after using real km spacing.
+    values = np.concatenate([np.ravel(np.asarray(arr, dtype=float)) for arr in arrays])
+    nonzero_values = values[np.abs(values) > 0]
+    target = nonzero_values if nonzero_values.size > 0 else values
+    scale = np.sqrt(np.mean(target ** 2))
+    return scale if np.isfinite(scale) and scale > 0 else 1.0
+
+
+def summarize_update_change(delta_new, delta_old):
+    diff = delta_new - delta_old
+    mean_abs_diff = np.mean(np.abs(diff))
+    max_abs_diff = np.max(np.abs(diff))
+    rms_old = np.sqrt(np.mean(delta_old ** 2))
+    rms_diff = np.sqrt(np.mean(diff ** 2))
+    rel_rms_change = rms_diff / rms_old if rms_old > 0 else 0.0
+    return mean_abs_diff, max_abs_diff, rel_rms_change
+
+
 def main():
     file1 = "data/delta_ms0.dat"
     file2 = "data/delta_mg0.dat"
@@ -106,14 +132,19 @@ def main():
     ms_0 = ms_v1.reshape((nx, ny, nz), order="F")
     mg_0 = mg_v1.reshape((nx, ny, nz), order="F")
 
+    # Build real grid coordinates so the finite differences follow the
+    # physical spacing of the Tengchong checkerboard model.
     lat_km, lon_km, depth_km, mean_lat = build_grid_coordinates(
         lat_values_deg,
         lon_values_deg,
         depth_values_km,
     )
 
+    # Compute the cross-gradient residual tau = grad(ms) x grad(mg).
     tx0, ty0, tz0 = central_difference(ms_0, mg_0, lat_km, lon_km, depth_km)
 
+    # Approximate the Jacobian blocks d(tau)/d(ms) and d(tau)/d(mg)
+    # using the same centered finite-difference stencil.
     dtx_dms_x, dtx_dms_y, dtx_dms_z, dtx_dmg_x, dtx_dmg_y, dtx_dmg_z = calculate_gradient_derivatives(
         ms_0,
         mg_0,
@@ -133,9 +164,9 @@ def main():
     dtx_dmg_y_col = dtx_dmg_y.flatten(order="F")
     dtx_dmg_z_col = dtx_dmg_z.flatten(order="F")
 
-    alpha_s = 1
-    alpha_g = 1
-    beta_t = 0.1
+    alpha_s = ALPHA_S
+    alpha_g = ALPHA_G
+    beta_t = BETA_T
 
     n = len(data1[:, 3])
     I = eye(n, format="csr")
@@ -159,18 +190,31 @@ def main():
         print("DEBUG: Suggested Scaling Factor for Gravity: {:.2f}".format(ratio))
     else:
         print("DEBUG: Gravity gradient is practically ZERO.")
+
+    # Each directional cross-gradient block is normalized by its own RMS scale.
+    # This keeps the real-spacing version consistent with the paper's equations
+    # while preventing the tau rows from becoming numerically negligible.
+    scale_x = compute_block_scale(dtx_dms_x_col, dtx_dmg_x_col, tx0_col[:n])
+    scale_y = compute_block_scale(dtx_dms_y_col, dtx_dmg_y_col, ty0_col[:n])
+    scale_z = compute_block_scale(dtx_dms_z_col, dtx_dmg_z_col, tz0_col[:n])
+
+    print("CONFIG: cross-gradient joint inversion parameters")
+    print("CONFIG: alpha_s = {:.6f}".format(alpha_s))
+    print("CONFIG: alpha_g = {:.6f}".format(alpha_g))
+    print("CONFIG: beta_t  = {:.6f}".format(beta_t))
+    print("DEBUG: cross-gradient normalization scales: x={:.6e}, y={:.6e}, z={:.6e}".format(scale_x, scale_y, scale_z))
     print("-" * 40)
     sys.stdout.flush()
 
     I_s = I * alpha_s
     I_g = I * alpha_g
 
-    dtx_dms_x_diag = diags(beta_t * dtx_dms_x_col)
-    dtx_dmg_x_diag = diags(beta_t * dtx_dmg_x_col)
-    dtx_dms_y_diag = diags(beta_t * dtx_dms_y_col)
-    dtx_dmg_y_diag = diags(beta_t * dtx_dmg_y_col)
-    dtx_dms_z_diag = diags(beta_t * dtx_dms_z_col)
-    dtx_dmg_z_diag = diags(beta_t * dtx_dmg_z_col)
+    dtx_dms_x_diag = diags(beta_t * (dtx_dms_x_col / scale_x))
+    dtx_dmg_x_diag = diags(beta_t * (dtx_dmg_x_col / scale_x))
+    dtx_dms_y_diag = diags(beta_t * (dtx_dms_y_col / scale_y))
+    dtx_dmg_y_diag = diags(beta_t * (dtx_dmg_y_col / scale_y))
+    dtx_dms_z_diag = diags(beta_t * (dtx_dms_z_col / scale_z))
+    dtx_dmg_z_diag = diags(beta_t * (dtx_dmg_z_col / scale_z))
 
     A = bmat(
         [
@@ -187,9 +231,9 @@ def main():
         [
             alpha_s * Delta_m_s0,
             alpha_g * Delta_m_g0,
-            -beta_t * tx0_col[:n],
-            -beta_t * ty0_col[:n],
-            -beta_t * tz0_col[:n],
+            -beta_t * (tx0_col[:n] / scale_x),
+            -beta_t * (ty0_col[:n] / scale_y),
+            -beta_t * (tz0_col[:n] / scale_z),
         ]
     )
 
@@ -197,6 +241,23 @@ def main():
 
     Delta_m_s = X[:n]
     Delta_m_g = X[n:]
+
+    mean_abs_diff_s, max_abs_diff_s, rel_rms_change_s = summarize_update_change(
+        Delta_m_s,
+        Delta_m_s0,
+    )
+    mean_abs_diff_g, max_abs_diff_g, rel_rms_change_g = summarize_update_change(
+        Delta_m_g,
+        Delta_m_g0,
+    )
+
+    print("DEBUG: mean(|Delta_m_s - Delta_m_s0|) = {:.6e}".format(mean_abs_diff_s))
+    print("DEBUG: max(|Delta_m_s - Delta_m_s0|)  = {:.6e}".format(max_abs_diff_s))
+    print("DEBUG: rel_rms_change_s               = {:.6e}".format(rel_rms_change_s))
+    print("DEBUG: mean(|Delta_m_g - Delta_m_g0|) = {:.6e}".format(mean_abs_diff_g))
+    print("DEBUG: max(|Delta_m_g - Delta_m_g0|)  = {:.6e}".format(max_abs_diff_g))
+    print("DEBUG: rel_rms_change_g               = {:.6e}".format(rel_rms_change_g))
+    sys.stdout.flush()
 
     ms_v2 = ms_v1 + Delta_m_s
     mg_v2 = mg_v1 + Delta_m_g

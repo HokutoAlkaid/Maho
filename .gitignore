@@ -43,5 +43,6 @@ logs/
 runtime*.txt
 fort*
 kernel*/
+**/exports/
 **/allfig/eps/
 **/allfig/jpg/
