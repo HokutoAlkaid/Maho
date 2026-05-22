@@ -23,10 +23,11 @@ cd surf_inv_direct
   cd ..
 cd ..
 
-# create initial density model from the converted velocity model
-python3 veltodensi.py \
-    surf_inv_direct/results/mod_iter10.dat \
-    gravity_inv/initial/joint_mod_iter.dat
+# pass the initial Vs model directly into JointSG so the gravity branch
+# follows the official JDSurfG parameterization (JointSG converts Vs to
+# density internally when computing gravity).
+cp surf_inv_direct/results/mod_iter10.dat \
+   gravity_inv/initial/joint_mod_iter.dat
 
 cd surf_inv
   rm -f info*

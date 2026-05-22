@@ -1,5 +1,7 @@
 #!/bin/sh
 set -x
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+SURF_RESULTS_DIR="$SCRIPT_DIR/../surf"
 rm -r *km
 velfile="joint_mod_iter.dat"
 rm *.dat
@@ -17,10 +19,14 @@ do
   #  create the depth file
   #--
   echo ${i}km >depth.dat
-  
-  cp /home/chp/Desktop/Indochina_CG/CG_Joint/results/surf/${i}km/scale.dat .
-  
-  
+
+  if [ ! -f "$SURF_RESULTS_DIR/${i}km/scale.dat" ]; then
+    echo "Error: missing surface-wave color scale at $SURF_RESULTS_DIR/${i}km/scale.dat" >&2
+    exit 1
+  fi
+
+  cp "$SURF_RESULTS_DIR/${i}km/scale.dat" .
+
   bash scale.sh
   cd ..
 done

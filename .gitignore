@@ -46,3 +46,6 @@ kernel*/
 **/exports/
 **/allfig/eps/
 **/allfig/jpg/
+.mplconfig/
+**/__pycache__/
+_tmp_JDSurfG_repo/
