@@ -1,13 +1,17 @@
 #!/bin/bash
 #----
 #rm -r allfig
-#mkdir allfig
-#mkdir allfig/jpg
-#mkdir allfig/eps
-for i in ${i}*km
+mkdir -p allfig/jpg allfig/eps
+rm -f allfig/jpg/*.jpg allfig/eps/*.eps
+for i in *km
 do
-   cp ${i}/*.jpg allfig/jpg
-   cp ${i}/*.eps allfig/eps
+   [ -d "$i" ] || continue
+   for fig in "$i"/*.jpg; do
+      [ -f "$fig" ] && cp "$fig" allfig/jpg
+   done
+   for fig in "$i"/*.eps; do
+      [ -f "$fig" ] && cp "$fig" allfig/eps
+   done
 done
 
 cd allfig 

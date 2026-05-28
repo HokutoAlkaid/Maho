@@ -11,7 +11,8 @@ import numpy as np
 
 
 def parse_args():
-    root = Path(__file__).resolve().parent
+    script_dir = Path(__file__).resolve().parent
+    root = script_dir.parent
     parser = argparse.ArgumentParser(
         description="Build an L-curve summary from tc_cross_joint export directories."
     )

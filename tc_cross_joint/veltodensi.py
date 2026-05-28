@@ -1,46 +1,82 @@
-#!/usr/bin/env python
-#----
-#    This python script is used to convert S-wave velocity to density structure
-#    Author:: Haopeng Chen from HUST
-#----
+#!/usr/bin/env python3
+"""Convert a lon/lat/depth/Vs table to density using Brocher (2005)."""
+
+import argparse
 import sys
+
 import numpy as np
 
+
+def brocher_vs_to_vp(vs):
+    return 0.9409 + 2.0947 * vs - 0.8206 * vs**2 + 0.2683 * vs**3 - 0.0251 * vs**4
+
+
+def brocher_vp_to_rho(vp):
+    return (
+        1.6612 * vp
+        - 0.4721 * vp**2
+        + 0.0671 * vp**3
+        - 0.0043 * vp**4
+        + 0.000106 * vp**5
+    )
+
+
+def brocher_vs_to_rho(vs):
+    return brocher_vp_to_rho(brocher_vs_to_vp(vs))
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Convert S-wave velocity to density with the Brocher (2005) relation."
+    )
+    parser.add_argument(
+        "input_model",
+        nargs="?",
+        default="mod_iter10.dat",
+        help="Input table with columns: lon lat depth Vs.",
+    )
+    parser.add_argument(
+        "output_model",
+        nargs="?",
+        default="joint_densi_iter10.dat",
+        help="Output table with columns: lon lat depth density.",
+    )
+    parser.add_argument(
+        "--clip-density",
+        nargs=2,
+        type=float,
+        metavar=("MIN", "MAX"),
+        help="Optionally clip output density. Default: no clipping.",
+    )
+    return parser.parse_args()
+
+
 def main():
-    # 允许通过命令行参数指定输入输出，更灵活
-    if len(sys.argv) < 3:
-        print("Usage: python3 veltodensi.py <input_Vs_model> <output_Density_model>")
-        # 默认回退逻辑，兼容旧用法
-        input_file = "mod_iter10.dat"
-        output_file = "joint_densi_iter10.dat"
-        print(f"Using default: {input_file} -> {output_file}")
-    else:
-        input_file = sys.argv[1]
-        output_file = sys.argv[2]
+    args = parse_args()
 
     try:
-        data = np.loadtxt(input_file)
-    except IOError:
-        print(f"Error: Cannot open {input_file}")
+        data = np.loadtxt(args.input_model)
+    except OSError:
+        print(f"Error: Cannot open {args.input_model}", file=sys.stderr)
         sys.exit(1)
 
-    with open(output_file, "w") as f1:
-        for row in data:
-            lon, lat, depth, vs = row[0], row[1], row[2], row[3]
-            
-            # Brocher (2005) Vs -> Vp
-            vp = 0.9409 + 2.0947*vs - 0.8206*vs**2 + 0.2683*vs**3 - 0.0251*vs**4
-            
-            # Brocher (2005) Vp -> Density
-            rho = 1.6612*vp - 0.4721*vp**2 + 0.0671*vp**3 - 0.0043*vp**4 + 0.000106*vp**5
-            
-            # 安全截断，防止非物理值
-            if rho < 1.5: rho = 1.5
-            if rho > 3.5: rho = 3.5
-            
-            f1.write(f'{lon:8.2f} {lat:8.2f} {depth:6.1f} {rho:10.4f} \n')
+    if data.ndim != 2 or data.shape[1] < 4:
+        print("Error: input model must have at least four columns.", file=sys.stderr)
+        sys.exit(1)
 
-    print(f"Successfully converted Vs to Density: {output_file}")
+    output = data[:, :4].copy()
+    output[:, 3] = brocher_vs_to_rho(data[:, 3])
+
+    if args.clip_density is not None:
+        lo, hi = args.clip_density
+        if lo > hi:
+            print("Error: --clip-density MIN must be <= MAX.", file=sys.stderr)
+            sys.exit(1)
+        output[:, 3] = np.clip(output[:, 3], lo, hi)
+
+    np.savetxt(args.output_model, output, fmt="%.6f %.6f %.6f %.6f")
+    print(f"Successfully converted Vs to density: {args.output_model}")
+
 
 if __name__ == "__main__":
     main()

@@ -68,7 +68,6 @@ TICS="1"
 #####
 
 depth=${1}
-#label=$2
 
 cptfile="height.cpt"
 grdfile="vel.grd"
@@ -176,15 +175,14 @@ gmt pscoast -J${PROJ} -R${LATLON} -B${TICS} -N${BDRYS}  -Dh  -W0.25p -A1000 -P -
 
 #gmt psxy Khorat_Plateau.txt -W1.5p,white -L  -R -J -O -K >> ${FNAME}
 
-#gmt psscale  -B$dscale/:km/s:  -Dx5.6i/2.3i/4.6i/0.2i -C${cptfile}  -O  -K  -S -V >> ${FNAME}
-gmt psscale  -B0.3/:km/s:  -Dx5.6i/2.6i/4.6i/0.2i -C${cptfile}  -O  -K  -S -V >> ${FNAME}
+#gmt psscale  -B$dscale/:g/cm3:  -Dx5.6i/2.3i/4.6i/0.2i -C${cptfile}  -O  -K  -S -V >> ${FNAME}
+gmt psscale  -B0.1/:g/cm3:  -Dx5.6i/2.6i/4.6i/0.2i -C${cptfile}  -O  -K  -S -V >> ${FNAME}
 
 #plot the location of city
 #gmt psxy $path/citylocation.txt -J${PROJ} -R${LATLON} -Sktriangle/0.05i -Gblack  -O  -K -V >>${FNAME}
 #gmt pstext $path/cityname.txt -J${PROJ} -R${LATLON} -F+f8p,black  -Y0.3c -O -K -P -V  >> ${FNAME}
 
-#echo 111.2 24.8 22 0 0 LM "$label"| gmt pstext -J${PROJ} -R${LATLON} -F+fblue -O -P -K -V  >> ${FNAME}
-echo 97.7 24 20 0 0 LM "$depth"| gmt pstext -J${PROJ} -R${LATLON} -F+fblack -O -P  -V  >> ${FNAME}
+echo 100.2 23.7 20 0 0 LM "$depth"| gmt pstext -J${PROJ} -R${LATLON} -F+fblack -O -P  -V  >> ${FNAME}
 #echo 102.0 23.0 16 0 0 LM "Joint"| gmt pstext -J${PROJ} -R${LATLON}  -O -P -V  >> ${FNAME}
 
 
@@ -212,10 +210,8 @@ mv ${FNAME} ${depth}.ps
 gmt psconvert -A -P -Te  ${depth}.ps
 gmt psconvert -A -P -Tj -E1000 ${depth}.ps 
 #gmt psconvert -A -P -Tf  ${FNAME} 
-rm *.ps
+rm -f *.ps
 
-rm  ${FNAME} 
-rm  *.grd
+rm -f ${FNAME} 
+rm -f *.grd
       
-
-

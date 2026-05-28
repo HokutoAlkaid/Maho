@@ -2,7 +2,12 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/run.sh" ]; then
+    ROOT_DIR="$SCRIPT_DIR"
+else
+    ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
 SURF_DIR="$ROOT_DIR/surf_inv"
 cd "$ROOT_DIR"
 
@@ -102,4 +107,4 @@ done
 echo "Sweep finished."
 echo "Summary: $SUMMARY_FILE"
 echo "Plot next with:"
-echo "uv run python $ROOT_DIR/plot_surfinv_lcurve.py --exports-root $SWEEP_ROOT --output-dir $SWEEP_ROOT/lcurve_summary"
+echo "uv run python $SCRIPT_DIR/plot_surfinv_lcurve.py --exports-root $SWEEP_ROOT --output-dir $SWEEP_ROOT/lcurve_summary"

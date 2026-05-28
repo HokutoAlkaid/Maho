@@ -13,9 +13,6 @@ set -x
 #####
 read depth < depth.dat
 read lscalev hscalev < scale.dat
-rm *.ps *eps *.jpg
-rm depth.dat 
-#read label< label.txt
-bash tomo_v5.sh $depth $lscalev $hscalev
-
-
+rm -f *.ps *eps *.jpg
+rm -f depth.dat 
+bash tomo_v6.sh $depth

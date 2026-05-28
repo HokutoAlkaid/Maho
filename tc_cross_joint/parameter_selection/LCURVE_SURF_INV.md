@@ -37,7 +37,7 @@ cd /home/chp/Documents/Maho/tc_cross_joint
 FIXED_DAMP=0.01 \
 SWEEP_NAME=surfinv_singlemodule_smooth_damp_0.01 \
 SMOOTH_VALUES="2 3 4 5 6 7 8 9 10 12 15 20" \
-bash run_surfinv_smooth_sweep.sh
+bash parameter_selection/run_surfinv_smooth_sweep.sh
 ```
 
 ## Plot on Windows
@@ -47,7 +47,7 @@ $env:UV_CACHE_DIR='C:\Users\Chp\Documents\Maho\.uv-cache'
 $env:MPLCONFIGDIR='C:\Users\Chp\Documents\Maho\.mplconfig'
 $env:MPLBACKEND='Agg'
 
-uv run --python 3.11 --with numpy --with matplotlib python C:\Users\Chp\Documents\Maho\tc_cross_joint\plot_surfinv_lcurve.py --exports-root C:\Users\Chp\Documents\Maho\tc_cross_joint\exports\surfinv_singlemodule_smooth_damp_0.01 --output-dir C:\Users\Chp\Documents\Maho\tc_cross_joint\exports\surfinv_singlemodule_smooth_damp_0.01\lcurve_summary --highlight-smooth 8
+uv run --python 3.11 --with numpy --with matplotlib python C:\Users\Chp\Documents\Maho\tc_cross_joint\parameter_selection\plot_surfinv_lcurve.py --exports-root C:\Users\Chp\Documents\Maho\tc_cross_joint\exports\surfinv_singlemodule_smooth_damp_0.01 --output-dir C:\Users\Chp\Documents\Maho\tc_cross_joint\exports\surfinv_singlemodule_smooth_damp_0.01\lcurve_summary --highlight-smooth 8
 ```
 
 ## Output

@@ -1,15 +1,30 @@
+import os
 import sys
 import numpy as np
 from scipy.sparse import bmat, diags, eye
 from scipy.sparse.linalg import lsmr
 
+from densitovel import invert_density_to_vs
+from veltodensi import brocher_vs_to_rho
+
 # ===== Joint inversion configuration =====
 # Keep the commonly tuned parameters near the top of the file so each
 # inversion only needs one quick edit here.
 KM_PER_DEG = 111.32
-ALPHA_S = 1.0
-ALPHA_G = 1.0
-BETA_T = 0.1
+
+
+def get_env_float(name, default):
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return float(raw)
+
+
+ALPHA_S = get_env_float("CROSS_ALPHA_S", 1.0)
+ALPHA_G = get_env_float("CROSS_ALPHA_G", 0.4)
+BETA_T = get_env_float("CROSS_BETA_T", 0.01)
+VS_MIN = get_env_float("CROSS_DENSITY_TO_VS_MIN", 1.5)
+VS_MAX = get_env_float("CROSS_DENSITY_TO_VS_MAX", 5.5)
 
 
 def ordered_unique(values):
@@ -140,14 +155,21 @@ def main():
         depth_values_km,
     )
 
-    # Compute the cross-gradient residual tau = grad(ms) x grad(mg).
-    tx0, ty0, tz0 = central_difference(ms_0, mg_0, lat_km, lon_km, depth_km)
+    # Use the gravity-side JointSG Vs model as an equivalent density model only
+    # inside the cross-gradient system. JointSG itself still receives Vs.
+    rho_g0_values = brocher_vs_to_rho(mg_v1)
+    rho_g1_values = brocher_vs_to_rho(mg_v1 + data2[:, 3])
+    Delta_rho_g0 = rho_g1_values - rho_g0_values
+    rho_g0 = rho_g0_values.reshape((nx, ny, nz), order="F")
 
-    # Approximate the Jacobian blocks d(tau)/d(ms) and d(tau)/d(mg)
+    # Compute the cross-gradient residual tau = grad(Vs_s) x grad(rho_g).
+    tx0, ty0, tz0 = central_difference(ms_0, rho_g0, lat_km, lon_km, depth_km)
+
+    # Approximate the Jacobian blocks d(tau)/d(Vs_s) and d(tau)/d(rho_g)
     # using the same centered finite-difference stencil.
     dtx_dms_x, dtx_dms_y, dtx_dms_z, dtx_dmg_x, dtx_dmg_y, dtx_dmg_z = calculate_gradient_derivatives(
         ms_0,
-        mg_0,
+        rho_g0,
         lat_km,
         lon_km,
         depth_km,
@@ -172,7 +194,7 @@ def main():
     I = eye(n, format="csr")
 
     Delta_m_s0 = data1[:, 3]
-    Delta_m_g0 = data2[:, 3]
+    Delta_m_g0 = Delta_rho_g0
 
     norm_s = np.mean(np.abs(Delta_m_s0))
     norm_g = np.mean(np.abs(Delta_m_g0))
@@ -182,8 +204,8 @@ def main():
     print("DEBUG: dlat spacing (km): {:.3f}".format(np.mean(np.abs(np.diff(lat_km)))))
     print("DEBUG: dlon spacing (km): {:.3f}".format(np.mean(np.abs(np.diff(lon_km)))))
     print("DEBUG: dz spacing (km): {}".format(", ".join("{:.1f}".format(v) for v in np.abs(np.diff(depth_km)))))
-    print("DEBUG: Surface Wave Gradient Magnitude (Mean Abs): {:.6e}".format(norm_s))
-    print("DEBUG: Gravity Gradient Magnitude      (Mean Abs): {:.6e}".format(norm_g))
+    print("DEBUG: Surface Wave Update Magnitude (Mean Abs, km/s): {:.6e}".format(norm_s))
+    print("DEBUG: Gravity Density Update Magnitude (Mean Abs, g/cc): {:.6e}".format(norm_g))
 
     if norm_g > 0:
         ratio = norm_s / norm_g
@@ -202,6 +224,7 @@ def main():
     print("CONFIG: alpha_s = {:.6f}".format(alpha_s))
     print("CONFIG: alpha_g = {:.6f}".format(alpha_g))
     print("CONFIG: beta_t  = {:.6f}".format(beta_t))
+    print("CONFIG: density-to-Vs bounds = {:.6f}, {:.6f} km/s".format(VS_MIN, VS_MAX))
     print(
         "DEBUG: cross-gradient normalization scales: x={:.6e}, y={:.6e}, z={:.6e}".format(
             scale_x,
@@ -246,33 +269,64 @@ def main():
     X = solve_least_squares(A, B)
 
     Delta_m_s = X[:n]
-    Delta_m_g = X[n:]
+    Delta_rho_g = X[n:]
 
     mean_abs_diff_s, max_abs_diff_s, rel_rms_change_s = summarize_update_change(
         Delta_m_s,
         Delta_m_s0,
     )
     mean_abs_diff_g, max_abs_diff_g, rel_rms_change_g = summarize_update_change(
-        Delta_m_g,
+        Delta_rho_g,
         Delta_m_g0,
     )
 
     print("DEBUG: mean(|Delta_m_s - Delta_m_s0|) = {:.6e}".format(mean_abs_diff_s))
     print("DEBUG: max(|Delta_m_s - Delta_m_s0|)  = {:.6e}".format(max_abs_diff_s))
     print("DEBUG: rel_rms_change_s               = {:.6e}".format(rel_rms_change_s))
-    print("DEBUG: mean(|Delta_m_g - Delta_m_g0|) = {:.6e}".format(mean_abs_diff_g))
-    print("DEBUG: max(|Delta_m_g - Delta_m_g0|)  = {:.6e}".format(max_abs_diff_g))
-    print("DEBUG: rel_rms_change_g               = {:.6e}".format(rel_rms_change_g))
+    print("DEBUG: mean(|Delta_rho_g - Delta_rho_g0|) = {:.6e}".format(mean_abs_diff_g))
+    print("DEBUG: max(|Delta_rho_g - Delta_rho_g0|)  = {:.6e}".format(max_abs_diff_g))
+    print("DEBUG: rel_rms_change_rho_g              = {:.6e}".format(rel_rms_change_g))
     sys.stdout.flush()
 
     ms_v2 = ms_v1 + Delta_m_s
-    mg_v2 = mg_v1 + Delta_m_g
+    rho_g2 = rho_g0_values + Delta_rho_g
+    mg_v2, rho_below, rho_above = invert_density_to_vs(
+        rho_g2,
+        vs_min=VS_MIN,
+        vs_max=VS_MAX,
+        strict=False,
+    )
+
+    clipped_count = int(np.count_nonzero(rho_below | rho_above))
+    if clipped_count:
+        print(
+            "WARNING: {} density values were outside the Brocher range and were clipped to Vs bounds.".format(
+                clipped_count
+            )
+        )
+    print(
+        "DEBUG: rho_g0 range = {:.6f}, {:.6f}; rho_g2 range = {:.6f}, {:.6f}".format(
+            float(np.min(rho_g0_values)),
+            float(np.max(rho_g0_values)),
+            float(np.min(rho_g2)),
+            float(np.max(rho_g2)),
+        )
+    )
+    print(
+        "DEBUG: Vs_g2 range after density inversion = {:.6f}, {:.6f}".format(
+            float(np.min(mg_v2)),
+            float(np.max(mg_v2)),
+        )
+    )
 
     ms_data = np.column_stack((ms_y1, ms_x1, ms_z1, ms_v2))
     np.savetxt("results/mod_iter.dat", ms_data, fmt="%f")
 
     mg_data = np.column_stack((mg_y1, mg_x1, mg_z1, mg_v2))
     np.savetxt("results/joint_mod_iter.dat", mg_data, fmt="%f")
+
+    rho_data = np.column_stack((mg_y1, mg_x1, mg_z1, rho_g2))
+    np.savetxt("results/joint_density_iter.dat", rho_data, fmt="%f")
 
     print("Joint inversion completed successfully.")
 

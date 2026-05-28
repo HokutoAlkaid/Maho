@@ -20,7 +20,7 @@ gfortran checkboard.f90 -o checkboard
 #---
 
 
-for depth in 000 002 004 006 008 010 015 020
+for depth in 002 004 006 008
 do
     #----
     #    set the initial parameter file of the model. 
@@ -48,7 +48,7 @@ do
     cd ..
 done
 
-for depth in 025 030 035 040 
+for depth in 015 020 025
 do
     #----
     #    set the initial parameter file of the model. 
@@ -76,7 +76,7 @@ do
     cd ..
 done
 
-for depth in 045 050 055 060
+for depth in 035 040 045 050
 do
     #----
     #    set the initial parameter file of the model. 
@@ -104,13 +104,13 @@ do
     cd ..
 done
 
-for depth in 030  
+for depth in 000 010 030 055 060
 do
     #----
     #    set the initial parameter file of the model. 
     #----
-    dv1="0.4"
-    dv2="-0.4"
+    dv1="0"
+    dv2="0"
     grdlon="97.0 102.0 10" 
     grdlat="22.0 27.0 10"
     echo $dv1 $dv2 >checkboard.in
@@ -145,4 +145,3 @@ cd ..
 cd gmt_depth_abs
    bash bash.sh
 cd ..
-

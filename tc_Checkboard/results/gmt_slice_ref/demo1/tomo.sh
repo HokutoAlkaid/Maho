@@ -23,27 +23,9 @@ path="tectonic"
 #####
 #    Define map bounds: MINLON/MAXLON/MINLAT/MAXLAT 
 #####
-# ------ 自动检测数据范围代码开始 ------
-
-# 获取第一列(X轴)的最小值和最大值
-# 注意：老版本 GMT 可能需要用 minmax 命令
-range_info=$(gmt info vel.dat -C)
-min_x=$(echo $range_info | awk '{print $1}')
-max_x=$(echo $range_info | awk '{print $2}')
-
-# 为了画图好看，向两边稍微扩一点点 (比如 0.1 度)
-R_MIN=$(echo "$min_x - 0.1" | bc)
-R_MAX=$(echo "$max_x + 0.1" | bc)
-
-# 动态组合成 -R 参数
-LATLON="${R_MIN}/${R_MAX}/0/55"
+# Use a fixed horizontal range so section plots match the map-view slices.
+LATLON="97.5/101/0/55"
 LATLON0=$LATLON
-echo "数据范围: $min_x 到 $max_x"
-echo "绘图与插值范围 (LATLON): $LATLON"
-
-# ------ 自动检测数据范围代码结束 ------
-#LATLON0="96.5/101.5/0/40"
-#LATLON="97/101/0/35"
 #####
 #    Define Mercator projection: Center lon,la, Plot_Width   
 #####
@@ -98,8 +80,8 @@ grdfile="vel.grd"
 makecpt -Cmy_seis.cpt -T${velscale} -Z > ${cptfile}
 #---
 #  convert txt file to grd file.
-#  xyz2grd command，-I option set the step，c is arc second
-#                  10c/10c is 10“X10“。m is arc minute。
+#  xyz2grd command: -I sets the sampling interval, c is arc second.
+#                  10c/10c means 10 x 10 arc seconds, m is arc minute.
 #  xyz2grd need that the xyz data is regular. For irregular data, 
 #  surface command is recommended.
 #  -V Selects verbose mode, which will send progress reports to stderr 
@@ -121,13 +103,14 @@ grdimage ${grdfile} -J${PROJ} -R${LATLON} -B${TICS} -C${cptfile} -E300 -G -K -P 
 #echo  99.2 100 16 0 0 LM "(b)" | pstext -J${PROJ} -R${LATLON} -Gblack -O -P -V -K >> ${FNAME}
 #echo 104.2 100 16 0 0 LM P1 | pstext -J${PROJ} -R${LATLON} -Gblack -O -P -V  >> ${FNAME}
 
-grdcontour ${grdfile} -J${PROJ} -R${LATLON} -B${TICS} -K -P -O -C0.4 -A0.4f8 \
-           -Gd4c  -Wathinner,blue,a -Wcthinner,blue,a -V >> ${FNAME}
+# Disable contours for the anomaly-only checkerboard view.
+#grdcontour ${grdfile} -J${PROJ} -R${LATLON} -B${TICS} -K -P -O -C0.4 -A0.4f8 \
+#           -Gd4c  -Wathinner,blue,a -Wcthinner,blue,a -V >> ${FNAME}
            
 #gawk '{print $1,$3}' crusthk.txt | psxy  -J${PROJ} -R${LATLON} -O -K -W1.5p,black,-  >>${FNAME}
 
 
-psscale  -B0.4/:km/s:   -D1.8i/-0.35i/3.0i/0.15ih -C${cptfile}  -O  >> ${FNAME}
+psscale  -B0.1/:km/s:   -D1.8i/-0.35i/3.0i/0.15ih -C${cptfile}  -O  >> ${FNAME}
 
 mv ${FNAME}   $depth.ps
 ps2raster -A -P -Tj $depth.ps
@@ -135,5 +118,3 @@ ps2raster -A -P -Te $depth.ps
 rm  *grd 
 rm *.ps
       
-
-

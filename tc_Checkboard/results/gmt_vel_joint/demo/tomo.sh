@@ -79,8 +79,8 @@ grdfile="vel.grd"
 makecpt -Cmy_seis.cpt -T${velscale} -Z > ${cptfile}
 #---
 #  convert txt file to grd file.
-#  xyz2grd command£¬-I option set the step£¬c is arc second
-#                  10c/10c is 10¡°X10¡°¡£m is arc minute¡£
+#  xyz2grd commandÂ£Â¬-I option set the stepÂ£Â¬c is arc second
+#                  10c/10c is 10Â¡Â°X10Â¡Â°Â¡Â£m is arc minuteÂ¡Â£
 #  xyz2grd need that the xyz data is regular. For irregular data, 
 #  surface command is recommended.
 #  -V Selects verbose mode, which will send progress reports to stderr 

@@ -11,18 +11,21 @@ set -x
 #rm -r allfig
 #mkdir allfig
 velfile="mod_iter.dat"
+fixed_lscale="-0.3"
+fixed_hscale="0.3"
 rm *.dat
 rm $velfile
 cp ../$velfile .
 n=0
-for i in 24.5 25.5
+for i in 24.75 25.25
 do
   rm vel.dat
   #awk '{if($3==depth1) print $1,$2,$4}' depth1=$i $velfile > vel.dat
   awk '{if($2==lat1) print $1,$3,$4}' lat1=$i $velfile > vel.dat
   
-  #awk '{print $1,$2,$3-(2.5+0.02*$2)}' vel.dat > veln.dat
-  #mv veln.dat vel.dat
+  # Remove the 1-D reference trend so the section shows the checkerboard anomaly.
+  awk '{print $1,$2,$3-(2.5+0.02*$2)}' vel.dat > veln.dat
+  mv veln.dat vel.dat
   
   n=$(($n+1))
   rm -r ${i}_sli
@@ -32,11 +35,9 @@ do
   cd ${i}_sli
      echo $i $label >depth.dat
      #---
-     #   use the same scale bar as that in gmt_vel_surf
+     #   Use a common anomaly color range for all sections.
      #---
-     bash scale1.sh
-     #rm scale.dat
-     #cp ../../gmt_vel_surf/${i}km/scale.dat .
+     printf "%10.1f%10.1f\n" $fixed_lscale $fixed_hscale > scale.dat
      bash scale2.sh
   cd ..
 done
@@ -44,4 +45,3 @@ done
 #cd allfig
 #   bash bash.sh
 #cd ..
-

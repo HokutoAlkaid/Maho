@@ -49,6 +49,8 @@ copy_slice_images() {
 }
 
 copy_file "$ROOT_DIR/crossgradient_inversion.py" "$TARGET_DIR/scripts/crossgradient_inversion.py"
+copy_file "$ROOT_DIR/veltodensi.py" "$TARGET_DIR/scripts/veltodensi.py"
+copy_file "$ROOT_DIR/densitovel.py" "$TARGET_DIR/scripts/densitovel.py"
 copy_file "$ROOT_DIR/run.sh" "$TARGET_DIR/scripts/run.sh"
 
 copy_file "$ROOT_DIR/surf_inv/DSurfTomo.in" "$TARGET_DIR/params/surf_DSurfTomo.in"
@@ -71,6 +73,7 @@ copy_file "$ROOT_DIR/gravity_inv/info_mkmat.txt" "$TARGET_DIR/logs/info_mkmat.tx
 
 copy_file "$ROOT_DIR/results/mod_iter.dat" "$TARGET_DIR/models/mod_iter.dat"
 copy_file "$ROOT_DIR/results/joint_mod_iter.dat" "$TARGET_DIR/models/joint_mod_iter.dat"
+copy_file "$ROOT_DIR/results/joint_density_iter.dat" "$TARGET_DIR/models/joint_density_iter.dat"
 copy_file "$ROOT_DIR/results/MOD" "$TARGET_DIR/models/MOD"
 copy_file "$ROOT_DIR/surf_inv_direct/results/mod_iter10.dat" "$TARGET_DIR/models/initial_joint_model.dat"
 
@@ -81,6 +84,9 @@ copy_file "$ROOT_DIR/gravity_inv/results/res_grav1.dat" "$TARGET_DIR/residuals/r
 
 # Keep exports lightweight by copying only final depth-slice images.
 copy_glob "$ROOT_DIR/results/surf/allfig/*km.jpg" "$TARGET_DIR/figures/surf_depth_slices"
+copy_glob "$ROOT_DIR/results/gravity/allfig/jpg/*km.jpg" "$TARGET_DIR/figures/gravity_depth_slices"
+copy_glob "$ROOT_DIR/results/gravity/allfig/grav_inv_*.jpg" "$TARGET_DIR/figures/gravity_depth_slices"
+copy_glob "$ROOT_DIR/results/gravity/allfig/grav_density_*.jpg" "$TARGET_DIR/figures/gravity_depth_slices"
 copy_slice_images "$ROOT_DIR/results/gmt_slice_ref" "$TARGET_DIR/figures/gmt_slice_ref_depth_slices"
 copy_file "$ROOT_DIR/results/gmt_slice_ref/colorbar/colorbar.jpg" "$TARGET_DIR/figures/gmt_slice_ref_depth_slices/colorbar.jpg"
 

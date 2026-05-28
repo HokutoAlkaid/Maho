@@ -2,7 +2,12 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/run.sh" ]; then
+    ROOT_DIR="$SCRIPT_DIR"
+else
+    ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
 cd "$ROOT_DIR"
 
 JOINTSG_FILE="$ROOT_DIR/gravity_inv/JointSG.in"
@@ -81,4 +86,4 @@ done
 echo "Sweep finished."
 echo "Summary: $SUMMARY_FILE"
 echo "Plot next with:"
-echo "uv run python $ROOT_DIR/plot_lcurve_from_exports.py --exports-root $SWEEP_ROOT --output-dir $SWEEP_ROOT/lcurve_summary --workflow-mode vs_seed"
+echo "uv run python $SCRIPT_DIR/plot_jointsg_lcurve.py --exports-root $SWEEP_ROOT --output-dir $SWEEP_ROOT/lcurve_summary --workflow-mode vs_seed"

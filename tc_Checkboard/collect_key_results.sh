@@ -39,6 +39,8 @@ copy_glob() {
 
 copy_if_exists "$SCRIPT_DIR/run.sh" "scripts/run.sh"
 copy_if_exists "$SCRIPT_DIR/crossgradient_inversion.py" "scripts/crossgradient_inversion.py"
+copy_if_exists "$SCRIPT_DIR/veltodensi.py" "scripts/veltodensi.py"
+copy_if_exists "$SCRIPT_DIR/densitovel.py" "scripts/densitovel.py"
 copy_if_exists "$SCRIPT_DIR/surf_inv/DSurfTomo.in" "params/surf_inv_DSurfTomo.in"
 copy_if_exists "$SCRIPT_DIR/gravity_inv/JointSG.in" "params/gravity_JointSG.in"
 
@@ -53,6 +55,7 @@ copy_glob "$SCRIPT_DIR/logs/*" "logs/extra_logs"
 
 copy_if_exists "$SCRIPT_DIR/results/mod_iter.dat" "models/mod_iter.dat"
 copy_if_exists "$SCRIPT_DIR/results/joint_mod_iter.dat" "models/joint_mod_iter.dat"
+copy_if_exists "$SCRIPT_DIR/results/joint_density_iter.dat" "models/joint_density_iter.dat"
 copy_if_exists "$SCRIPT_DIR/results/MOD" "models/MOD"
 
 copy_if_exists "$SCRIPT_DIR/results/gmt_vel_joint/Fig1/Fig6_checker_1.jpg" "figures/Fig1/Fig6_checker_1.jpg"

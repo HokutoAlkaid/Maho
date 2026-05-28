@@ -9,6 +9,7 @@ mkdir -p "$logdir"
 rm -f "$timefile"
 
 terminal_log="$logdir/terminal_output.log"
+: > "$terminal_log"
 exec > >(tee -a "$terminal_log") 2>&1
 
 start=`date`

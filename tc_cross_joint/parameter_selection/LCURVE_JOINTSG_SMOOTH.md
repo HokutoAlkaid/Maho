@@ -34,7 +34,7 @@ not as:
 
 ## First-pass sweep
 
-Default values in [`run_jointsg_smooth_sweep.sh`](C:/Users/Chp/Documents/Maho/tc_cross_joint/run_jointsg_smooth_sweep.sh):
+Default values in [`run_jointsg_smooth_sweep.sh`](C:/Users/Chp/Documents/Maho/tc_cross_joint/parameter_selection/run_jointsg_smooth_sweep.sh):
 
 `1 2 4 6 8 10 15 20 30 40 60 80`
 
@@ -55,7 +55,7 @@ C:\Users\Chp\.local\bin\uv.exe python install 3.11
 Then run the sweep inside the Linux or bash environment that already runs the inversion workflow.
 
 ```bash
-bash run_jointsg_smooth_sweep.sh
+bash parameter_selection/run_jointsg_smooth_sweep.sh
 ```
 
 Or with explicit settings:
@@ -63,7 +63,7 @@ Or with explicit settings:
 ```bash
 FIXED_DAMP=0.01 \
 SMOOTH_VALUES="1 2 4 6 8 10 15 20 30 40 60 80" \
-bash run_jointsg_smooth_sweep.sh
+bash parameter_selection/run_jointsg_smooth_sweep.sh
 ```
 
 Each run is exported into:
@@ -85,7 +85,7 @@ The plotting script reads exported runs and computes:
 Command:
 
 ```bash
-uv run python plot_lcurve_from_exports.py \
+uv run python parameter_selection/plot_jointsg_lcurve.py \
   --exports-root exports/jointsg_smooth_damp_0.01 \
   --output-dir exports/jointsg_smooth_damp_0.01/lcurve_summary \
   --workflow-mode vs_seed
